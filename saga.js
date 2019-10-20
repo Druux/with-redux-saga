@@ -1,6 +1,7 @@
 /* global fetch */
 
-import { all, call, delay, put, take, takeLatest } from 'redux-saga/effects'
+import { all, call, delay, fork, put, take, takeLatest } from 'redux-saga/effects'
+import { eventChannel } from 'redux-saga'
 import es6promise from 'es6-promise'
 import 'isomorphic-unfetch'
 
@@ -26,10 +27,32 @@ function * loadDataSaga () {
   }
 }
 
+function createChannel() {
+   return eventChannel(emit => {
+      console.log('start')
+
+      setTimeout(() => {
+         emit('TEST')
+      }, 2000)
+
+      return () => console.log('Done')
+    })
+}
+
+function* watchChannel() {
+   const channel = yield call(createChannel)
+
+   while (true) {
+      const action = yield take(channel)
+      console.log('take: ', action)
+   }
+}
+
 function * rootSaga () {
   yield all([
     call(runClockSaga),
-    takeLatest(actionTypes.LOAD_DATA, loadDataSaga)
+    takeLatest(actionTypes.LOAD_DATA, loadDataSaga),
+    fork(watchChannel)
   ])
 }
 
